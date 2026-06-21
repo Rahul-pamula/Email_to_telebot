@@ -1,4 +1,4 @@
-# Tech Stack & Topics to Cover
+ # Tech Stack & Topics to Cover
 
 This document outlines the various technologies, frameworks, and concepts to cover across different domains.
 
