@@ -1,6 +1,6 @@
     Tech Stack & Topics to Cover
 
-This document outlines the various technologies, frameworks, and concepts to cover across different domains.
+This document outlines the various technologies, frameworks, and concepts to cover across different domains. 
 
 ## 🧠 AGENTIC AI & LLM FRAMEWORKS
 - LangChain
