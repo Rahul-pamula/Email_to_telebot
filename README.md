@@ -6,7 +6,7 @@ This document outlines the various technologies, frameworks, and concepts to cov
 - LangChain
 - LangGraph
 - LangSmith
-- LangServe 
+- LangServe
 
 ## 🔍 RAG & VECTOR DATABASES
 - Qdrant
