@@ -1,7 +1,8 @@
 import { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, Environment, ContactShadows } from '@react-three/drei';
+import { Float, Environment, ContactShadows, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { Mail, ArrowRight, Send } from 'lucide-react';
 
 function FloatingCore() {
   const meshRef = useRef<THREE.Mesh>(null);
@@ -26,31 +27,37 @@ function FloatingCore() {
           opacity={0.8}
         />
       </mesh>
-      
-      {/* Inner glowing 3D Envelope */}
-      <group scale={0.8}>
-        {/* Envelope Base */}
-        <mesh position={[0, -0.2, 0]}>
-          <boxGeometry args={[1.6, 1.1, 0.2]} />
-          <meshPhysicalMaterial 
-            color="#2481cc" 
-            emissive="#2481cc" 
-            emissiveIntensity={0.8} 
-            roughness={0.2}
-            metalness={0.8}
-          />
-        </mesh>
-        
-        {/* Envelope Flap (Triangular prism) */}
-        <mesh position={[0, 0.35, 0.1]} rotation={[Math.PI / 2, Math.PI, 0]}>
-          <cylinderGeometry args={[0.92, 0.92, 0.05, 3]} />
-          <meshPhysicalMaterial 
-            color="#3ECF8E" 
-            emissive="#3ECF8E" 
-            emissiveIntensity={0.5} 
-            roughness={0.2}
-          />
-        </mesh>
+      {/* Floating Icons inside the sphere */}
+      <group>
+        <Html transform position={[0, 0, 0]} scale={0.6}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '24px', 
+            background: 'rgba(255, 255, 255, 0.8)', 
+            backdropFilter: 'blur(12px)', 
+            padding: '24px 40px', 
+            borderRadius: '24px', 
+            border: '1px solid rgba(255,255,255,1)', 
+            boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+              <div style={{ background: '#f1f5f9', padding: '16px', borderRadius: '50%' }}>
+                <Mail size={48} color="#10b981" />
+              </div>
+              <span style={{ fontWeight: 600, color: '#64748b' }}>Email</span>
+            </div>
+            
+            <ArrowRight size={32} color="#94a3b8" />
+            
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+              <div style={{ background: '#f1f5f9', padding: '16px', borderRadius: '50%' }}>
+                <Send size={48} color="#3b82f6" />
+              </div>
+              <span style={{ fontWeight: 600, color: '#64748b' }}>Telegram</span>
+            </div>
+          </div>
+        </Html>
       </group>
     </Float>
   );
