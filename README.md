@@ -1,143 +1,67 @@
-    Tech Stack & Topics to Cover
+# 📧 Email to Telegram AI Summary Bot
 
-This document outlines the various technologies, frameworks, and concepts to cover across different domains. 
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![Deno](https://img.shields.io/badge/Deno-white?style=for-the-badge&logo=deno&logoColor=464647)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)
+![Groq](https://img.shields.io/badge/Groq_Llama_3-f55036?style=for-the-badge)
 
-## 🧠 AGENTIC AI & LLM FRAMEWORKS
-- LangChain
-- LangGraph
-- LangSmith
-- LangServe
+A powerful, serverless bot that monitors your email inbox, uses cutting-edge AI (Groq Llama 3) to instantly classify whether an email is important or routine, and pushes a clean, 3-bullet summary directly to your Telegram.
 
-## 🔍 RAG & VECTOR DATABASES
-- Qdrant
-- Pinecone
-- Weaviate
-- ChromaDB
-- FAISS
-- Embeddings (OpenAI, Sentence-Transformers, BGE)
-- RAG (Retrieval-Augmented Generation)
-- HyDE
-- Reranking (Cohere, BGE)
+Built entirely on **Supabase Edge Functions** to run 24/7 in the cloud for absolutely **zero cost**.
 
-## 🧠 LLMs & MODELS
-- OpenAI (GPT-4, GPT-4o, GPT-4o-mini)
-- Anthropic (Claude 3.5, Claude 3)
-- Groq
-- Google (Gemini)
-- Azure OpenAI
-- Llama 3
-- Mistral
-- Mixtral
-- vLLM
-- TGI (Text Generation Inference)
-- Ollama
-- HuggingFace Transformers
-- Prompt Engineering
-- Few-shot Learning
-- Chain of Thought (CoT)
-- ReAct
+---
 
-## ⚙️ BACKEND & API
-- FastAPI
-- Django (optional)
-- WebSockets
-- REST APIs
-- GraphQL (optional)
+## ✨ Features
 
-## 🗄️ DATABASES
-- PostgreSQL
-- Redis
-- SQLite (for local)
-- Alembic (Migrations)
+- **🧠 Smart AI Filtering:** Automatically ignores newsletters, promotions, and routine emails. Only alerts you when an email actually requires your attention (deadlines, financial, urgent tasks).
+- **📝 Bite-Sized Summaries:** Important emails are instantly summarized into 3 quick bullet points. No more reading long email threads.
+- **🔐 Secure by Design:** Uses IMAP App Passwords encrypted at rest using **Supabase Vault**. Edge functions bypass attachments entirely (`BODY.PEEK[TEXT]`) to respect 50MB memory limits and ensure high performance.
+- **⚙️ Interactive Telegram UI:** Fully functional Telegram bot allowing you to:
+  - `/add_email` to connect multiple inboxes (Gmail supported).
+  - Press inline buttons to `🔕 Block Sender`, `🕒 Snooze`, or `📅 Remind Tomorrow`.
+  - Mark specific senders as `/vip` to bypass AI filtering.
+- **⚡ Serverless Architecture:** Runs entirely on Supabase Edge Functions (Deno) triggered by `pg_cron` (polling) and Telegram Webhooks (instant commands).
 
-## 📨 MESSAGE QUEUES & ASYNC
-- Celery
-- RabbitMQ
-- Redis (as broker)
+---
 
-## 🚀 DEVOPS & INFRASTRUCTURE
-- Docker
-- Docker Compose
-- Kubernetes
-- Helm
-- Jenkins
-- Terraform
-- ArgoCD
-- GitHub Actions
-- Container Registry (Docker Hub, ECR, ACR)
-- Nginx
-- Traefik
+## 🛠 Tech Stack
 
-## 📊 MONITORING & OBSERVABILITY
-- Prometheus
-- Grafana
-- ELK Stack (Elasticsearch, Logstash, Kibana)
-- Loki
-- Jaeger (Tracing)
-- OpenTelemetry
+- **Backend / Hosting:** Supabase (PostgreSQL, Edge Functions, pg_cron, Supabase Vault)
+- **Language:** TypeScript (Deno runtime)
+- **AI / LLM:** Groq API (Llama 3 8B model)
+- **Bot Interface:** Telegram Bot API
+- **Email Protocol:** IMAP (`imapflow` over SSL)
 
-## 🧪 QA & TESTING
-- pytest
-- DeepEval
-- Ragas
-- Locust (Load Testing)
-- k6 (Performance Testing)
-- Selenium (E2E)
-- Coverage (pytest-cov)
-- Pre-commit (Black, isort, flake8, mypy)
+---
 
-## 🔐 SECURITY
-- JWT (JSON Web Tokens)
-- OAuth2
-- OIDC
-- HashiCorp Vault
-- AWS Secrets Manager
-- CORS
-- Row-Level Security (PostgreSQL RLS)
-- Input Validation (Pydantic)
-- Prompt Injection Prevention
-- Rate Limiting
+## 🏗 Architecture
 
-## 🎨 FRONTEND
-- React
-- Next.js
-- Vue.js (optional)
-- Tailwind CSS
-- Monaco Editor (VS Code in browser)
-- Chart.js
-- D3.js
-- Three.js (for 3D visualizations)
+1. **Telegram Webhook (`webhookHandler.ts`)**  
+   Receives instant commands from the user (e.g., `/start`, `/add_email`). Handles the multi-step conversation state to securely store the user's Gmail App Password in Supabase Vault.
+2. **Cron Trigger (`emailPoller.ts`)**  
+   Runs every 5 minutes via `pg_cron`. Connects to your email via IMAP, fetches unread text bodies, and passes them to the AI.
+3. **AI Engine (`aiService.ts`)**  
+   Prompts Groq Llama 3 to classify the email (`IMPORTANT` vs `ROUTINE`). If important, returns a strict 3-bullet JSON summary.
+4. **Delivery (`telegram.ts`)**  
+   Pushes the AI summary to the user's Telegram chat along with interactive Inline Keyboard Buttons.
 
-## 🔧 INTEGRATIONS
-- GitHub API
-- GitLab API
-- Slack API
-- Teams API
-- Discord API
-- Webhooks
-- Google Calendar API
-- Twilio (SMS/WhatsApp/Voice)
-- SendGrid (Email)
-- Zoom API
-- Salesforce API (optional)
+---
 
-## 📡 MCP (MODEL CONTEXT PROTOCOL)
-- MCP Server
-- MCP Client
-- Tool Definition
+## 🚀 Quick Start & Deployment
 
-## 📦 PACKAGE MANAGEMENT
-- pip
-- Poetry
-- Conda
+Want to deploy your own instance for free? We have prepared a step-by-step deployment guide.
 
-## 🛠️ LANGUAGES
-- Python
-- TypeScript / JavaScript
-- Go (optional)
-- Rust (optional)
+👉 **[Read the Deployment Guide](./Docs/DEPLOYMENT.md)**
 
-## ☁️ CLOUD PLATFORMS
-- AWS (EC2, RDS, S3, EKS, Lambda)
-- Google Cloud Platform (GCP)
-- Microsoft Azure
+---
+
+## 🔒 Privacy & Security
+
+- Your email App Password is **never** stored in plain text. It is encrypted via `pgcrypto` inside **Supabase Vault** and decrypted only in memory during the IMAP fetch.
+- Emails are **not stored** in the database. The system only stores the `message_id`, sender, and subject to prevent duplicate notifications.
+- The Edge Function enforces strict RLS (Row Level Security) fallback policies, though it operates internally via the Service Role Key.
+
+---
+
+_Built with ❤️ for a cleaner inbox._
