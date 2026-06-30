@@ -130,7 +130,15 @@ export function DeployWizard() {
               <strong style={{ color: 'var(--text)' }}>Quick Steps:</strong>
               <ol style={{ margin: '8px 0 0 20px', padding: 0, lineHeight: '1.6' }}>
                 <li>Get a free AI key at <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" style={{color: 'var(--primary-tele)', fontWeight: 'bold'}}>console.groq.com</a>.<br/><span style={{fontSize: '0.8rem', opacity: 0.8}}>Example: <code>gsk_A1b2...</code></span></li>
-                <li>Create a Telegram bot by messaging <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" style={{color: 'var(--primary-tele)', fontWeight: 'bold'}}>@BotFather</a>.<br/><span style={{fontSize: '0.8rem', opacity: 0.8}}>Example: <code>123456:ABC-DEF...</code></span></li>
+                <li>
+                  Create a Telegram bot by messaging <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" style={{color: 'var(--primary-tele)', fontWeight: 'bold'}}>@BotFather</a>:
+                  <ul style={{ margin: '4px 0 4px 20px', padding: 0, fontSize: '0.85rem' }}>
+                    <li>Send the <code>/newbot</code> command.</li>
+                    <li>Choose a name and a username (must end in "bot").</li>
+                    <li>Copy the provided HTTP API token.</li>
+                  </ul>
+                  <span style={{fontSize: '0.8rem', opacity: 0.8}}>Example: <code>123456:ABC-DEF...</code></span>
+                </li>
               </ol>
             </div>
             
