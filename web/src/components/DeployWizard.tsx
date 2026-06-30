@@ -81,13 +81,17 @@ export function DeployWizard() {
         {step === 2 && (
           <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <h2><Key style={{ verticalAlign: 'middle', marginRight: 8, color: 'var(--primary-supa)' }} /> Database Credentials</h2>
-            <p style={{ marginTop: 8, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-              Enter your Supabase project details. We will push the database tables and edge functions directly via the Management API.
-            </p>
+            <div style={{ marginTop: 16, padding: '16px', background: 'rgba(62, 175, 124, 0.1)', borderRadius: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+              <strong style={{ color: 'var(--text)' }}>Quick Steps:</strong>
+              <ol style={{ margin: '8px 0 0 20px', padding: 0, lineHeight: '1.6' }}>
+                <li>Sign in and create a new project at the <a href="https://supabase.com/dashboard/projects" target="_blank" rel="noreferrer" style={{color: 'var(--primary-supa)', fontWeight: 'bold'}}>Supabase Dashboard</a>.</li>
+                <li>Find your <b>Project URL</b> in <i>Project Settings &gt; API</i>.</li>
+                <li>Generate a <b>Management Token</b> in <i>Account &gt; Access Tokens</i>.</li>
+              </ol>
+            </div>
             
             <div style={{ marginTop: 24 }}>
-              <label style={{ display: 'block', marginBottom: 4, fontSize: '0.9rem', fontWeight: 600 }}>Supabase Project URL</label>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Find this at <a href="https://supabase.com/dashboard/project/_/settings/api" target="_blank" rel="noreferrer" style={{color: 'var(--primary-supa)'}}>Project Settings &gt; API</a></p>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: '0.95rem', fontWeight: 600 }}>Supabase Project URL</label>
               <input 
                 className="glass-input" 
                 placeholder="https://xyz.supabase.co" 
@@ -97,8 +101,7 @@ export function DeployWizard() {
             </div>
 
             <div style={{ marginTop: 16 }}>
-              <label style={{ display: 'block', marginBottom: 4, fontSize: '0.9rem', fontWeight: 600 }}>Management Token</label>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Generate a token at <a href="https://supabase.com/dashboard/account/tokens" target="_blank" rel="noreferrer" style={{color: 'var(--primary-supa)'}}>Account &gt; Access Tokens</a></p>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: '0.95rem', fontWeight: 600 }}>Management Token</label>
               <input 
                 className="glass-input" 
                 type="password"
