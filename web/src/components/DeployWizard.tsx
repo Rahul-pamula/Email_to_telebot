@@ -21,31 +21,104 @@ export function DeployWizard() {
 
   const simulateDeploy = async () => {
     setIsDeploying(true);
-    addLog("Starting client-side deployment...");
-    await new Promise(r => setTimeout(r, 1000));
+    setLogs([]);
+
+    const extractRef = (url: string) => {
+      try {
+        const hostname = new URL(url).hostname;
+        return hostname.split('.')[0];
+      } catch (e) {
+        return null;
+      }
+    };
     
-    addLog("Authenticating with Supabase Management API...", "info");
-    await new Promise(r => setTimeout(r, 1500));
-    addLog("Authentication successful.", "success");
-    
-    addLog("Pushing database schema...", "info");
-    await new Promise(r => setTimeout(r, 2000));
-    addLog("Database schema and tables created.", "success");
-    
-    addLog("Uploading secrets securely...", "info");
-    await new Promise(r => setTimeout(r, 1500));
-    addLog("Secrets stored.", "success");
-    
-    addLog("Deploying Edge Function...", "info");
-    await new Promise(r => setTimeout(r, 3000));
-    addLog("Edge function 'email-bot' deployed.", "success");
-    
-    addLog("Registering Telegram Webhook...", "info");
-    await new Promise(r => setTimeout(r, 1000));
-    addLog("Webhook registered.", "success");
-    
-    setIsDeploying(false);
-    setTimeout(() => setStep(4), 1000);
+    const projectRef = extractRef(keys.supabaseUrl);
+    if (!projectRef) {
+      addLog("Invalid Supabase URL", "error");
+      setIsDeploying(false);
+      return;
+    }
+
+    const authHeaders = {
+      'Authorization': `Bearer ${keys.supabaseToken}`,
+      'Content-Type': 'application/json'
+    };
+
+    try {
+      addLog("Authenticating with Supabase Management API...", "info");
+      const projRes = await fetch('https://api.supabase.com/v1/projects', { headers: authHeaders });
+      if (!projRes.ok) throw new Error("Authentication failed. Check your token.");
+      addLog("Authentication successful.", "success");
+      
+      addLog("Pushing database schema...", "info");
+      const sql1 = (await import('../../../supabase/migrations/20260629163821_initial_schema.sql?raw')).default;
+      const sql2 = (await import('../../../supabase/migrations/20260629173835_enable_pg_net.sql?raw')).default;
+      const combinedSql = `${sql1}\n${sql2}`;
+      
+      const sqlRes = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/database/query`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ query: combinedSql })
+      });
+      if (!sqlRes.ok) {
+         const errData = await sqlRes.json();
+         addLog(`SQL Warning: ${errData.message || 'Unknown error'}`, "error");
+      } else {
+         addLog("Database schema and tables created.", "success");
+      }
+      
+      addLog("Uploading secrets securely...", "info");
+      const webhookSecret = crypto.randomUUID().replace(/-/g, '');
+      const secretRes = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/secrets`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify([
+          { name: 'GROQ_API_KEY', value: keys.groqKey },
+          { name: 'TELEGRAM_BOT_TOKEN', value: keys.telegramToken },
+          { name: 'TELEGRAM_WEBHOOK_SECRET', value: webhookSecret }
+        ])
+      });
+      if (!secretRes.ok) {
+        const errData = await secretRes.json();
+        throw new Error(`Failed to upload secrets: ${errData.message || 'Unknown error'}`);
+      }
+      addLog("Secrets stored.", "success");
+      
+      addLog("Deploying Edge Function...", "info");
+      const bundleRes = await fetch(`${import.meta.env.BASE_URL}email-bot-bundle.ts`);
+      if (!bundleRes.ok) throw new Error("Failed to fetch bundled edge function code.");
+      const bundleBlob = await bundleRes.blob();
+      
+      const formData = new FormData();
+      formData.append("metadata", JSON.stringify({ entrypoint_path: "index.ts", name: "email-bot" }));
+      formData.append("file", bundleBlob, "index.ts");
+
+      const deployRes = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/functions/deploy?slug=email-bot`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${keys.supabaseToken}`
+        },
+        body: formData
+      });
+      if (!deployRes.ok) {
+        const errData = await deployRes.json();
+        throw new Error(`Failed to deploy edge function: ${errData.message || 'Unknown error'}`);
+      }
+      addLog("Edge function 'email-bot' deployed.", "success");
+      
+      addLog("Registering Telegram Webhook...", "info");
+      const webhookUrl = `https://${projectRef}.supabase.co/functions/v1/email-bot`;
+      const teleRes = await fetch(`https://api.telegram.org/bot${keys.telegramToken}/setWebhook?url=${encodeURIComponent(webhookUrl)}&secret_token=${webhookSecret}`);
+      if (!teleRes.ok) throw new Error("Failed to set Telegram webhook.");
+      addLog("Webhook registered.", "success");
+      
+      setIsDeploying(false);
+      setTimeout(() => setStep(4), 1000);
+
+    } catch (e: any) {
+      addLog(`Error: ${e.message}`, "error");
+      setIsDeploying(false);
+    }
   };
 
   return (
