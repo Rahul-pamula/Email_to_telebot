@@ -85,8 +85,8 @@ export function DeployWizard() {
               <strong style={{ color: 'var(--text)' }}>Quick Steps:</strong>
               <ol style={{ margin: '8px 0 0 20px', padding: 0, lineHeight: '1.6' }}>
                 <li>Sign in and create a new project at the <a href="https://supabase.com/dashboard/projects" target="_blank" rel="noreferrer" style={{color: 'var(--primary-supa)', fontWeight: 'bold'}}>Supabase Dashboard</a>.</li>
-                <li>Find your <b>Project URL</b> in <a href="https://supabase.com/dashboard/project/_/settings/api" target="_blank" rel="noreferrer" style={{color: 'var(--primary-supa)'}}>Project Settings &gt; API</a>.</li>
-                <li>Generate a <b>Personal Access Token</b> in <a href="https://supabase.com/dashboard/account/tokens" target="_blank" rel="noreferrer" style={{color: 'var(--primary-supa)'}}>Account &gt; Access Tokens</a>.</li>
+                <li>Find your <b>Project URL</b> in <a href="https://supabase.com/dashboard/project/_/settings/api" target="_blank" rel="noreferrer" style={{color: 'var(--primary-supa)'}}>Project Settings &gt; API</a>.<br/><span style={{fontSize: '0.8rem', opacity: 0.8}}>Example: <code>https://xyz.supabase.co</code></span></li>
+                <li>Generate a <b>Personal Access Token</b> in <a href="https://supabase.com/dashboard/account/tokens" target="_blank" rel="noreferrer" style={{color: 'var(--primary-supa)'}}>Account &gt; Access Tokens</a>.<br/><span style={{fontSize: '0.8rem', opacity: 0.8}}>Example: <code>sbp_1a2b3c...</code></span></li>
               </ol>
             </div>
             
@@ -131,7 +131,7 @@ export function DeployWizard() {
             
             <div style={{ marginTop: 24 }}>
               <label style={{ display: 'block', marginBottom: 4, fontSize: '0.9rem', fontWeight: 600 }}>Groq API Key (AI)</label>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Get your free key at <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" style={{color: 'var(--primary-tele)'}}>console.groq.com</a></p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Get your free key at <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" style={{color: 'var(--primary-tele)'}}>console.groq.com</a> (e.g. <code>gsk_A1b2...</code>)</p>
               <input 
                 className="glass-input" 
                 type="password"
@@ -143,7 +143,7 @@ export function DeployWizard() {
 
             <div style={{ marginTop: 16 }}>
               <label style={{ display: 'block', marginBottom: 4, fontSize: '0.9rem', fontWeight: 600 }}>Telegram Bot Token</label>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Create a bot with <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" style={{color: 'var(--primary-tele)'}}>@BotFather</a> on Telegram</p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>Create a bot with <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" style={{color: 'var(--primary-tele)'}}>@BotFather</a> on Telegram (e.g. <code>123456:ABC-DEF...</code>)</p>
               <input 
                 className="glass-input" 
                 type="password"
