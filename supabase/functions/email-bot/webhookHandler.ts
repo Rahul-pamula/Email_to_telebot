@@ -109,8 +109,8 @@ async function handleCallbackQuery(
       user_telegram_id: telegramId,
       sender_email: senderEmail,
     });
-    await answerCallbackQuery(callbackQuery.id, `🔕 ${senderEmail} blocked!`);
-    await editMessageText(chatId, messageId, `🔕 <b>Sender blocked</b>: <code>${escapeHtml(senderEmail)}</code>\nYou won't receive summaries from this sender anymore.`);
+    await answerCallbackQuery(callbackQuery.id, `🔕 Muted ${senderEmail}`);
+    await editMessageText(chatId, messageId, `🔕 <b>Sender muted</b>: <code>${escapeHtml(senderEmail)}</code>\nYou won't receive summaries from this sender anymore.`);
   }
 
   // ── Snooze 1 hour (s1h:<shortId>) ────────────────────────────────────────
@@ -120,19 +120,8 @@ async function handleCallbackQuery(
       user_telegram_id: telegramId,
       snooze_until: snoozeUntil,
     });
-    await answerCallbackQuery(callbackQuery.id, "🕒 Snoozed for 1 hour!");
+    await answerCallbackQuery(callbackQuery.id, "🕒 Remind later (1 hour)");
     await editMessageText(chatId, messageId, "🕒 <b>Notifications snoozed for 1 hour.</b>\nI'll resume sending summaries after that.");
-  }
-
-  // ── Snooze until tomorrow (s24:<shortId>) ────────────────────────────────
-  else if (data.startsWith("s24:")) {
-    const snoozeUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    await supabase.from("user_preferences").upsert({
-      user_telegram_id: telegramId,
-      snooze_until: snoozeUntil,
-    });
-    await answerCallbackQuery(callbackQuery.id, "📅 Snoozed until tomorrow!");
-    await editMessageText(chatId, messageId, "📅 <b>Notifications snoozed until tomorrow.</b>\nEnjoy your rest!");
   }
 
   // ── Interactive Remove Email (rm_em:<email>) ─────────────────────────────

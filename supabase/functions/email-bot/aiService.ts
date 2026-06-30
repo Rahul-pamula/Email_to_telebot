@@ -24,13 +24,13 @@ STEP 1 — CLASSIFY the email as one of:
 
 IF THE EMAIL IS A "Google Security Alert" OR "Your verification is past due" OR SIMILAR AUTOMATED PLATFORM ALERT, YOU MUST CLASSIFY IT AS "ROUTINE".
 
-STEP 2 — If "IMPORTANT", write exactly 3 short bullet points summarizing the key information.
+STEP 2 — If "IMPORTANT", write exactly 2 short bullet points summarizing the key information.
 Each bullet must be under 100 characters and start with an emoji that matches the tone.
 
 RESPOND ONLY with valid JSON in this exact format (no extra text, no markdown backticks):
 {
   "classification": "IMPORTANT" | "ROUTINE",
-  "summary": ["• bullet 1", "• bullet 2", "• bullet 3"] | null
+  "summary": ["• bullet 1", "• bullet 2"] | null
 }`;
 
 /**

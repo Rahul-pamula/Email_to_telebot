@@ -243,7 +243,7 @@ async function processEmail(
     email.from,
     email.subject,
     account.email_address,
-    summary ?? `📩 New email from ${email.from}\nSubject: ${email.subject}`,
+    summary ?? `⚠️ AI Summary unavailable.`,
     email.messageId
   );
 

@@ -89,11 +89,11 @@ export async function sendSummary(
   const inlineKeyboard = {
     inline_keyboard: [
       [
-        { text: "🔕 Block Sender", callback_data: `blk:${senderEmail}`.substring(0, 64) },
-        { text: "🕒 Snooze 1h",    callback_data: `s1h:${shortId}` },
+        { text: "↗️ Open in Inbox", url: `https://mail.google.com/mail/u/0/#search/rfc822msgid:${encodeURIComponent(messageId)}` },
       ],
       [
-        { text: "📅 Remind Tomorrow", callback_data: `s24:${shortId}` },
+        { text: "🔕 Mute this user", callback_data: `blk:${senderEmail}`.substring(0, 64) },
+        { text: "🕒 Remind later", callback_data: `s1h:${shortId}` },
       ],
     ],
   };
