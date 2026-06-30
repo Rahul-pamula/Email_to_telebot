@@ -93,6 +93,9 @@ export async function sendSummary(
       ],
       [
         { text: "🔕 Mute this user", callback_data: `blk:${senderEmail}`.substring(0, 64) },
+        { text: "⭐ Add to VIP", callback_data: `vip:${senderEmail}`.substring(0, 64) },
+      ],
+      [
         { text: "🕒 Remind later", callback_data: `s1h:${shortId}` },
       ],
     ],

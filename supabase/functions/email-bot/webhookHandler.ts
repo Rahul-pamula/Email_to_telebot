@@ -113,6 +113,17 @@ async function handleCallbackQuery(
     await editMessageText(chatId, messageId, `🔕 <b>Sender muted</b>: <code>${escapeHtml(senderEmail)}</code>\nYou won't receive summaries from this sender anymore.`);
   }
 
+  // ── Add VIP from Summary (vip:<email>) ──────────────────────────────
+  else if (data.startsWith("vip:")) {
+    const senderEmail = data.replace("vip:", "").trim();
+    await supabase.from("vip_list").upsert({
+      user_telegram_id: telegramId,
+      sender_email: senderEmail,
+    });
+    await answerCallbackQuery(callbackQuery.id, `⭐ Added ${senderEmail} to VIP`);
+    await editMessageText(chatId, messageId, `⭐ <b>Sender added to VIP</b>: <code>${escapeHtml(senderEmail)}</code>\nYou will always receive immediate notifications from this sender without AI filtering.`);
+  }
+
   // ── Snooze 1 hour (s1h:<shortId>) ────────────────────────────────────────
   else if (data.startsWith("s1h:")) {
     const snoozeUntil = new Date(Date.now() + 60 * 60 * 1000).toISOString();
