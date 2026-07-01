@@ -75,8 +75,8 @@ export function DeployWizard() {
          addLog("Database schema and tables created.", "success");
       }
       
-      addLog("Uploading secrets securely...", "info");
-      const webhookSecret = crypto.randomUUID().replace(/-/g, '');
+      addLog("Generating deterministic security tokens...", "info");
+      const webhookSecret = btoa(keys.telegramToken).replace(/[^a-zA-Z0-9]/g, '').substring(0, 31);
       const secretRes = await fetch(`${SUPABASE_API_BASE}/v1/projects/${projectRef}/secrets`, {
         method: 'POST',
         headers: authHeaders,

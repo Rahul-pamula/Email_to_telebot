@@ -49,7 +49,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Reject immediately if the secret doesn't match ours
     if (telegramSecret !== config.telegram.webhookSecret) {
       console.warn("[Router] Webhook received with invalid secret token.");
-      return new Response("Unauthorized", { status: 401 });
+      return new Response("Forbidden: Invalid Secret", { status: 403 });
     }
 
     try {
