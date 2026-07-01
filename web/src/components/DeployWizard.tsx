@@ -98,10 +98,10 @@ export function DeployWizard() {
       const bundleBlob = await bundleRes.blob();
       
       const formData = new FormData();
-      formData.append("metadata", JSON.stringify({ entrypoint_path: "index.ts", name: "email-bot" }));
+      formData.append("metadata", JSON.stringify({ entrypoint_path: "index.ts", name: "email-bot", verify_jwt: false }));
       formData.append("file", bundleBlob, "index.ts");
 
-      const deployRes = await fetch(`${SUPABASE_API_BASE}/v1/projects/${projectRef}/functions/deploy?slug=email-bot`, {
+      const deployRes = await fetch(`${SUPABASE_API_BASE}/v1/projects/${projectRef}/functions/deploy?slug=email-bot&verify_jwt=false`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${keys.supabaseToken}`
