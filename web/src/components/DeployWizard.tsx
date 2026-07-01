@@ -52,7 +52,10 @@ export function DeployWizard() {
     try {
       addLog("Authenticating with Supabase Management API via Proxy...", "info");
       const projRes = await fetch(`${SUPABASE_API_BASE}/v1/projects`, { headers: authHeaders });
-      if (!projRes.ok) throw new Error("Authentication failed. Check your token.");
+      if (!projRes.ok) {
+        const errData = await projRes.json().catch(() => ({}));
+        throw new Error(`Authentication failed: ${errData.message || 'Invalid Personal Access Token'}`);
+      }
       addLog("Authentication successful.", "success");
       
       addLog("Pushing database schema...", "info");
