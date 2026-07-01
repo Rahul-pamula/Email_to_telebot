@@ -167,7 +167,14 @@ export function DeployWizard() {
               <ol style={{ margin: '8px 0 0 20px', padding: 0, lineHeight: '1.6' }}>
                 <li>Sign in and create a new project at the <a href="https://supabase.com/dashboard/projects" target="_blank" rel="noreferrer" style={{color: 'var(--primary-supa)', fontWeight: 'bold'}}>Supabase Dashboard</a>.</li>
                 <li>Find your <b>Project URL</b> in <a href="https://supabase.com/dashboard/project/_/settings/api" target="_blank" rel="noreferrer" style={{color: 'var(--primary-supa)'}}>Project Settings &gt; API</a>.<br/><span style={{fontSize: '0.8rem', opacity: 0.8}}>Example: <code>https://xyz.supabase.co</code></span></li>
-                <li>Generate a <b>Personal Access Token</b> in <a href="https://supabase.com/dashboard/account/tokens" target="_blank" rel="noreferrer" style={{color: 'var(--primary-supa)'}}>Account &gt; Access Tokens</a>.<br/><span style={{fontSize: '0.8rem', opacity: 0.8}}>Example: <code>sbp_1a2b3c...</code></span></li>
+                <li>
+                  Generate a <b>Personal Access Token</b>:
+                  <ul style={{ margin: '4px 0 4px 20px', padding: 0, fontSize: '0.85rem' }}>
+                    <li>Click your Profile Avatar (bottom left) &gt; <a href="https://supabase.com/dashboard/account/tokens" target="_blank" rel="noreferrer" style={{color: 'var(--primary-supa)'}}>Access Tokens</a></li>
+                    <li>Click <b>Generate new token</b> (Must start with <code>sbp_</code>).</li>
+                  </ul>
+                  <span style={{fontSize: '0.8rem', opacity: 0.8}}>Do NOT use your project's Anon or Service Role keys!</span>
+                </li>
               </ol>
             </div>
             
