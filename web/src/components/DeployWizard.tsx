@@ -98,21 +98,31 @@ export function DeployWizard() {
       const bundleBlob = await bundleRes.blob();
       
       const formData = new FormData();
-      formData.append("metadata", JSON.stringify({ entrypoint_path: "index.ts", name: "email-bot", verify_jwt: false }));
+      formData.append("metadata", JSON.stringify({ entrypoint_path: "index.ts", name: "email-bot" }));
       formData.append("file", bundleBlob, "index.ts");
-
-      const deployRes = await fetch(`${SUPABASE_API_BASE}/v1/projects/${projectRef}/functions/deploy?slug=email-bot&verify_jwt=false`, {
+      
+      const deployRes = await fetch(`${SUPABASE_API_BASE}/v1/projects/${projectRef}/functions/deploy?slug=email-bot`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${keys.supabaseToken}`
         },
         body: formData
       });
+      
       if (!deployRes.ok) {
         const errData = await deployRes.json();
         throw new Error(`Failed to deploy edge function: ${errData.message || 'Unknown error'}`);
       }
-      addLog("Edge function 'email-bot' deployed.", "success");
+      
+      addLog("Configuring function security rules...", "info");
+      const patchRes = await fetch(`${SUPABASE_API_BASE}/v1/projects/${projectRef}/functions/email-bot`, {
+        method: 'PATCH',
+        headers: authHeaders,
+        body: JSON.stringify({ verify_jwt: false })
+      });
+      
+      if (!patchRes.ok) throw new Error("Failed to configure function security rules.");
+      addLog("Edge function 'email-bot' deployed and configured.", "success");
       
       addLog("Registering Telegram Webhook...", "info");
       const webhookUrl = `https://${projectRef}.supabase.co/functions/v1/email-bot`;
