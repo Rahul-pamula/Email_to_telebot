@@ -4,8 +4,8 @@
 -- This prevents the free-tier Supabase database from filling up.
 -- ============================================================================
 
--- If a previous job with this name exists, unschedule it first to avoid duplicates
-SELECT cron.unschedule('cleanup-old-emails');
+-- If a previous job with this name exists, delete it first to avoid duplicates
+DELETE FROM cron.job WHERE jobname = 'cleanup-old-emails';
 
 -- Schedule the daily cleanup job
 SELECT cron.schedule(
