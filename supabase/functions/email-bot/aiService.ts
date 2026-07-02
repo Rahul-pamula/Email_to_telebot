@@ -66,7 +66,7 @@ export async function analyzeEmail(
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[AI] Groq API error ${response.status}:`, errorText);
-      return { isImportant: true, summary: null };
+      return { isImportant: true, summary: "⚠️ AI Analysis failed (API Error)." };
     }
 
     const data = await response.json();
@@ -74,31 +74,36 @@ export async function analyzeEmail(
 
     if (!content) {
       console.warn("[AI] Groq returned empty content.");
-      return { isImportant: true, summary: null };
+      return { isImportant: true, summary: "⚠️ AI returned empty content." };
     }
 
     // Strip markdown JSON wrappers if the LLM hallucinates them despite response_format
     const cleanContent = content.replace(/^```json\n?/m, "").replace(/\n?```$/m, "").trim();
     const parsed = JSON.parse(cleanContent);
     const isImportant = parsed?.classification === "IMPORTANT";
-    const bulletPoints: string[] | null = parsed?.summary ?? null;
-
-    // Validate the summary is actually an array of 3 strings
-    const validSummary =
-      isImportant &&
-      Array.isArray(bulletPoints) &&
-      bulletPoints.length > 0
-        ? bulletPoints.join("\n")
-        : null;
+    
+    let bulletPoints = parsed?.summary;
+    let validSummary: string | null = null;
+    
+    if (isImportant && bulletPoints) {
+      if (Array.isArray(bulletPoints) && bulletPoints.length > 0) {
+        validSummary = bulletPoints.join("\n");
+      } else if (typeof bulletPoints === "string") {
+        validSummary = bulletPoints;
+      }
+    }
 
     console.log(
       `[AI] Classification: ${parsed?.classification} | Subject: ${subject}`
     );
 
-    return { isImportant, summary: validSummary };
+    return { 
+      isImportant, 
+      summary: validSummary || (isImportant ? "⚠️ AI failed to generate summary." : null) 
+    };
   } catch (err) {
     console.error("[AI] Unexpected error during analysis:", err);
     // Fail open: treat as important if we can't reach the AI
-    return { isImportant: true, summary: null };
+    return { isImportant: true, summary: "⚠️ AI Analysis failed (Unexpected Error)." };
   }
 }

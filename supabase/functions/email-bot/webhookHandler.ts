@@ -58,8 +58,13 @@ async function handleMessage(
   const telegramId = message.from.id;
   const text = message.text.trim();
 
-  // ── Ensure the user exists in our DB ────────────────────────────────────
-  await upsertUser(supabase, message.from);
+  // ── Ensure the user exists in our DB and fetch approval status ───────
+  const isApproved = await upsertUserAndCheckApproval(supabase, message.from);
+
+  if (!isApproved) {
+    await handleUnapprovedUser(chatId, telegramId, message.from, supabase);
+    return;
+  }
 
   // ── Check for an active stateful conversation ────────────────────────────
   const pendingAction = await getPendingAction(supabase, telegramId);
@@ -101,6 +106,30 @@ async function handleCallbackQuery(
   const data = callbackQuery.data || "";
 
   if (!chatId || !messageId) return;
+
+  // ── Admin Approval Callbacks (approve:<id> | deny:<id>) ────────────────
+  if (data.startsWith("approve:") || data.startsWith("deny:")) {
+    const isApprove = data.startsWith("approve:");
+    const targetId = parseInt(data.split(":")[1], 10);
+    
+    // Verify the clicker is actually an admin
+    const { data: adminCheck } = await supabase.from("users").select("is_admin").eq("telegram_id", telegramId).single();
+    
+    if (adminCheck?.is_admin) {
+      if (isApprove) {
+        await supabase.from("users").update({ is_approved: true }).eq("telegram_id", targetId);
+        await editMessageText(chatId, messageId, `✅ <b>Approved access</b> for user ID: ${targetId}`);
+        await sendMessage(targetId, "🎉 <b>Your access has been approved!</b>\nSend /start to begin.");
+      } else {
+        await editMessageText(chatId, messageId, `❌ <b>Denied access</b> for user ID: ${targetId}`);
+        await sendMessage(targetId, "⛔️ Your request for access was denied by the Admin.");
+      }
+      await answerCallbackQuery(callbackQuery.id, isApprove ? "Approved" : "Denied");
+    } else {
+      await answerCallbackQuery(callbackQuery.id, "Unauthorized. You are not an admin.");
+    }
+    return;
+  }
 
   // ── Block sender from Summary (blk:<email>) ──────────────────────────────
   if (data.startsWith("blk:")) {
@@ -437,16 +466,58 @@ async function handleStatefulInput(
 // Database Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function upsertUser(
+async function upsertUserAndCheckApproval(
   supabase: SupabaseClient,
   from: { id: number; first_name: string; username?: string }
-): Promise<void> {
-  await supabase.from("users").upsert({
+): Promise<boolean> {
+  // 1. Check if user already exists
+  const { data: existingUser } = await supabase.from("users").select("is_approved").eq("telegram_id", from.id).single();
+  
+  if (existingUser) {
+    // Just update their name/timestamp
+    await supabase.from("users").update({
+      first_name: from.first_name,
+      username: from.username || null,
+      updated_at: new Date().toISOString()
+    }).eq("telegram_id", from.id);
+    return existingUser.is_approved;
+  }
+
+  // 2. User does not exist. Are they the FIRST user ever?
+  const { count } = await supabase.from("users").select("*", { count: "exact", head: true });
+  const isFirstUser = count === 0;
+
+  // 3. Insert new user
+  await supabase.from("users").insert({
     telegram_id: from.id,
     first_name: from.first_name,
     username: from.username || null,
-    updated_at: new Date().toISOString(),
+    is_admin: isFirstUser,
+    is_approved: isFirstUser, // Admin is auto-approved
   });
+
+  return isFirstUser;
+}
+
+async function handleUnapprovedUser(
+  chatId: number,
+  telegramId: number,
+  from: { first_name: string; username?: string },
+  supabase: SupabaseClient
+) {
+  await sendMessage(chatId, "⛔️ <b>Access restricted.</b>\nThis is a private bot instance. Your request for access has been forwarded to the Admin.");
+  
+  // Find the Admin to notify them
+  const { data: admins } = await supabase.from("users").select("telegram_id").eq("is_admin", true).limit(1);
+  if (admins && admins.length > 0) {
+    const adminId = admins[0].telegram_id;
+    const userDisplay = from.username ? `@${from.username}` : from.first_name;
+    const keyboard = [
+      [{ text: "✅ Approve", callback_data: `approve:${telegramId}` }],
+      [{ text: "❌ Deny", callback_data: `deny:${telegramId}` }]
+    ];
+    await sendInteractiveMenu(adminId, `🔔 <b>New Access Request</b>\nUser ${escapeHtml(userDisplay)} (ID: ${telegramId}) wants to use the bot.`, keyboard);
+  }
 }
 
 async function getPendingAction(

@@ -140,7 +140,11 @@ async function handleMessage(message, supabase) {
   const chatId = message.chat.id;
   const telegramId = message.from.id;
   const text = message.text.trim();
-  await upsertUser(supabase, message.from);
+  const isApproved = await upsertUserAndCheckApproval(supabase, message.from);
+  if (!isApproved) {
+    await handleUnapprovedUser(chatId, telegramId, message.from, supabase);
+    return;
+  }
   const pendingAction = await getPendingAction(supabase, telegramId);
   if (pendingAction) {
     await handleStatefulInput(text, chatId, telegramId, pendingAction, supabase);
@@ -170,6 +174,25 @@ async function handleCallbackQuery(callbackQuery, supabase) {
   const telegramId = callbackQuery.from.id;
   const data = callbackQuery.data || "";
   if (!chatId || !messageId) return;
+  if (data.startsWith("approve:") || data.startsWith("deny:")) {
+    const isApprove = data.startsWith("approve:");
+    const targetId = parseInt(data.split(":")[1], 10);
+    const { data: adminCheck } = await supabase.from("users").select("is_admin").eq("telegram_id", telegramId).single();
+    if (adminCheck?.is_admin) {
+      if (isApprove) {
+        await supabase.from("users").update({ is_approved: true }).eq("telegram_id", targetId);
+        await editMessageText(chatId, messageId, `\u2705 <b>Approved access</b> for user ID: ${targetId}`);
+        await sendMessage(targetId, "\u{1F389} <b>Your access has been approved!</b>\nSend /start to begin.");
+      } else {
+        await editMessageText(chatId, messageId, `\u274C <b>Denied access</b> for user ID: ${targetId}`);
+        await sendMessage(targetId, "\u26D4\uFE0F Your request for access was denied by the Admin.");
+      }
+      await answerCallbackQuery(callbackQuery.id, isApprove ? "Approved" : "Denied");
+    } else {
+      await answerCallbackQuery(callbackQuery.id, "Unauthorized. You are not an admin.");
+    }
+    return;
+  }
   if (data.startsWith("blk:")) {
     const senderEmail = data.replace("blk:", "").trim();
     await supabase.from("blocklist").upsert({
@@ -411,13 +434,41 @@ The first check will happen within 5 minutes.
     }
   }
 }
-async function upsertUser(supabase, from) {
-  await supabase.from("users").upsert({
+async function upsertUserAndCheckApproval(supabase, from) {
+  const { data: existingUser } = await supabase.from("users").select("is_approved").eq("telegram_id", from.id).single();
+  if (existingUser) {
+    await supabase.from("users").update({
+      first_name: from.first_name,
+      username: from.username || null,
+      updated_at: (/* @__PURE__ */ new Date()).toISOString()
+    }).eq("telegram_id", from.id);
+    return existingUser.is_approved;
+  }
+  const { count } = await supabase.from("users").select("*", { count: "exact", head: true });
+  const isFirstUser = count === 0;
+  await supabase.from("users").insert({
     telegram_id: from.id,
     first_name: from.first_name,
     username: from.username || null,
-    updated_at: (/* @__PURE__ */ new Date()).toISOString()
+    is_admin: isFirstUser,
+    is_approved: isFirstUser
+    // Admin is auto-approved
   });
+  return isFirstUser;
+}
+async function handleUnapprovedUser(chatId, telegramId, from, supabase) {
+  await sendMessage(chatId, "\u26D4\uFE0F <b>Access restricted.</b>\nThis is a private bot instance. Your request for access has been forwarded to the Admin.");
+  const { data: admins } = await supabase.from("users").select("telegram_id").eq("is_admin", true).limit(1);
+  if (admins && admins.length > 0) {
+    const adminId = admins[0].telegram_id;
+    const userDisplay = from.username ? `@${from.username}` : from.first_name;
+    const keyboard = [
+      [{ text: "\u2705 Approve", callback_data: `approve:${telegramId}` }],
+      [{ text: "\u274C Deny", callback_data: `deny:${telegramId}` }]
+    ];
+    await sendInteractiveMenu(adminId, `\u{1F514} <b>New Access Request</b>
+User ${escapeHtml(userDisplay)} (ID: ${telegramId}) wants to use the bot.`, keyboard);
+  }
 }
 async function getPendingAction(supabase, telegramId) {
   const { data } = await supabase.from("user_preferences").select("pending_action").eq("user_telegram_id", telegramId).single();
@@ -579,26 +630,36 @@ ${body}`;
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[AI] Groq API error ${response.status}:`, errorText);
-      return { isImportant: true, summary: null };
+      return { isImportant: true, summary: "\u26A0\uFE0F AI Analysis failed (API Error)." };
     }
     const data = await response.json();
     const content = data?.choices?.[0]?.message?.content;
     if (!content) {
       console.warn("[AI] Groq returned empty content.");
-      return { isImportant: true, summary: null };
+      return { isImportant: true, summary: "\u26A0\uFE0F AI returned empty content." };
     }
     const cleanContent = content.replace(/^```json\n?/m, "").replace(/\n?```$/m, "").trim();
     const parsed = JSON.parse(cleanContent);
     const isImportant = parsed?.classification === "IMPORTANT";
-    const bulletPoints = parsed?.summary ?? null;
-    const validSummary = isImportant && Array.isArray(bulletPoints) && bulletPoints.length > 0 ? bulletPoints.join("\n") : null;
+    let bulletPoints = parsed?.summary;
+    let validSummary = null;
+    if (isImportant && bulletPoints) {
+      if (Array.isArray(bulletPoints) && bulletPoints.length > 0) {
+        validSummary = bulletPoints.join("\n");
+      } else if (typeof bulletPoints === "string") {
+        validSummary = bulletPoints;
+      }
+    }
     console.log(
       `[AI] Classification: ${parsed?.classification} | Subject: ${subject}`
     );
-    return { isImportant, summary: validSummary };
+    return {
+      isImportant,
+      summary: validSummary || (isImportant ? "\u26A0\uFE0F AI failed to generate summary." : null)
+    };
   } catch (err) {
     console.error("[AI] Unexpected error during analysis:", err);
-    return { isImportant: true, summary: null };
+    return { isImportant: true, summary: "\u26A0\uFE0F AI Analysis failed (Unexpected Error)." };
   }
 }
 
