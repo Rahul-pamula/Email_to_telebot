@@ -132,6 +132,42 @@ export function DeployWizard() {
       if (!teleRes.ok) throw new Error("Failed to set Telegram webhook.");
       addLog("Webhook registered.", "success");
       
+      addLog("Scheduling automated email polling...", "info");
+      const cronSql = `
+        DO $$
+        BEGIN
+          PERFORM cron.unschedule('email-poller');
+        EXCEPTION
+          WHEN OTHERS THEN
+            -- Ignore error
+        END
+        $$;
+        
+        SELECT cron.schedule(
+          'email-poller',
+          '*/5 * * * *',
+          $$
+            SELECT net.http_post(
+                url:='${webhookUrl}',
+                headers:='{"x-cron-trigger": "email-poller"}'::jsonb
+            );
+          $$
+        );
+      `;
+      
+      const cronRes = await fetch(`${SUPABASE_API_BASE}/v1/projects/${projectRef}/database/query`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ query: cronSql })
+      });
+      
+      if (!cronRes.ok) {
+         const errData = await cronRes.json();
+         addLog(`Cron Warning: ${errData.message || 'Unknown error'}`, "error");
+      } else {
+         addLog("Automated email polling scheduled.", "success");
+      }
+      
       setIsDeploying(false);
       setTimeout(() => setStep(4), 1000);
 
