@@ -1,7 +1,7 @@
-// supabase/functions/email-bot/index.ts
+// ../supabase/functions/email-bot/index.ts
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// supabase/functions/email-bot/config.ts
+// ../supabase/functions/email-bot/config.ts
 function requireEnv(key) {
   const value = Deno.env.get(key);
   if (!value) {
@@ -37,7 +37,7 @@ var config = {
   }
 };
 
-// supabase/functions/email-bot/telegram.ts
+// ../supabase/functions/email-bot/telegram.ts
 var TELEGRAM_API = `https://api.telegram.org/bot${config.telegram.botToken}`;
 async function callTelegramApi(method, body) {
   const res = await fetch(`${TELEGRAM_API}/${method}`, {
@@ -123,7 +123,7 @@ function escapeHtml(text) {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// supabase/functions/email-bot/webhookHandler.ts
+// ../supabase/functions/email-bot/webhookHandler.ts
 async function handleWebhook(update, supabase) {
   if (update.callback_query) {
     await handleCallbackQuery(update.callback_query, supabase);
@@ -513,7 +513,7 @@ async function saveEmailAccount(supabase, telegramId, emailAddress, appPassword)
   }
 }
 
-// supabase/functions/email-bot/imapClient.ts
+// ../supabase/functions/email-bot/imapClient.ts
 import { ImapFlow } from "npm:imapflow@1";
 async function fetchUnseenEmails(emailAddress, appPassword, imapHost = "imap.gmail.com", imapPort = 993) {
   const client = new ImapFlow({
@@ -584,7 +584,7 @@ function cleanEmailBody(raw) {
   return raw.replace(/<[^>]*>/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ").replace(/&quot;/g, '"').replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
 }
 
-// supabase/functions/email-bot/aiService.ts
+// ../supabase/functions/email-bot/aiService.ts
 var GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 var SYSTEM_PROMPT = `You are an intelligent email assistant. Your job is to classify emails and summarize them.
 
@@ -593,6 +593,8 @@ STEP 1 \u2014 CLASSIFY the email as one of:
 - "ROUTINE": MUST be ignored (e.g., Google Security alerts, new device logins, newsletters, promotions, automated reports, social media notifications, OTP codes).
 
 IF THE EMAIL IS A "Google Security Alert" OR "Your verification is past due" OR SIMILAR AUTOMATED PLATFORM ALERT, YOU MUST CLASSIFY IT AS "ROUTINE".
+
+CRITICAL EXCEPTION: Any emails regarding Job Opportunities, Placement Drives, Interview Schedules, or University Announcements MUST ALWAYS be classified as 'IMPORTANT', even if they are automated or bulk emails.
 
 STEP 2 \u2014 If "IMPORTANT", write exactly 2 short bullet points summarizing the key information.
 Each bullet must be under 100 characters and start with an emoji that matches the tone.
@@ -663,7 +665,7 @@ ${body}`;
   }
 }
 
-// supabase/functions/email-bot/emailPoller.ts
+// ../supabase/functions/email-bot/emailPoller.ts
 async function runEmailPoller(supabase) {
   console.log("[Poller] Starting email polling cycle...");
   const { data: accounts, error: accountsError } = await supabase.from("email_accounts").select("*").eq("is_active", true);
@@ -807,7 +809,7 @@ function extractEmail2(from) {
   return match ? match[1] : from.trim();
 }
 
-// supabase/functions/email-bot/index.ts
+// ../supabase/functions/email-bot/index.ts
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
