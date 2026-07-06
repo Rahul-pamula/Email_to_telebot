@@ -68,7 +68,18 @@ export async function analyzeEmail(
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[AI] Groq API error ${response.status}:`, errorText);
-      return { isImportant: true, summary: "⚠️ AI Analysis failed (API Error)." };
+      
+      let errMsg = `API Error ${response.status}`;
+      try {
+        const errJson = JSON.parse(errorText);
+        if (errJson.error?.message) {
+          errMsg = errJson.error.message;
+        }
+      } catch (e) {
+        // Ignore JSON parse error, use fallback
+      }
+      
+      return { isImportant: true, summary: `⚠️ AI Analysis failed: ${errMsg}` };
     }
 
     const data = await response.json();

@@ -100,10 +100,10 @@ export async function fetchUnseenEmails(
 
         // ─────────────────────────────────────────────────────────────────
         // Truncation Guard: Prevent sending huge emails to Groq's API.
-        // We cap at config.groq.maxEmailTokens worth of characters.
-        // A rough estimate is 4 chars per token.
+        // If an email contains raw Base64/HTML, 1 char can equal 1 token.
+        // We cap strictly at config.groq.maxEmailTokens * 2.
         // ─────────────────────────────────────────────────────────────────
-        const charLimit = config.groq.maxEmailTokens * 4;
+        const charLimit = config.groq.maxEmailTokens * 2;
         const truncatedBody = textBody.length > charLimit
           ? textBody.substring(0, charLimit) + "\n\n[... email truncated ...]"
           : textBody;
