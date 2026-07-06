@@ -43,20 +43,20 @@ export async function runEmailPoller(supabase: SupabaseClient): Promise<void> {
   console.log(`[Poller] Processing ${accounts.length} active account(s).`);
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Step 2: Process each account concurrently using Promise.all
-  // This is more efficient than processing them one-by-one sequentially.
+  // Step 2: Process each account sequentially to avoid Groq rate limits.
+  // With 8+ accounts, concurrent processing (Promise.all) instantly triggers
+  // 429 Too Many Requests on the Groq free tier.
   // ─────────────────────────────────────────────────────────────────────────
-  await Promise.all(
-    accounts.map((account: EmailAccount) =>
-      processAccount(account, supabase).catch((err) => {
-        // Log the error but don't crash the whole poller
-        console.error(
-          `[Poller] Error processing account ${account.email_address}:`,
-          err
-        );
-      })
-    )
-  );
+  for (const account of accounts) {
+    try {
+      await processAccount(account, supabase);
+    } catch (err) {
+      console.error(
+        `[Poller] Error processing account ${account.email_address}:`,
+        err
+      );
+    }
+  }
 
   console.log("[Poller] Polling cycle complete.");
 }
@@ -159,6 +159,11 @@ async function processAccount(
       blockedSenders,
       vipSenders
     );
+    
+    // Add a 2.5-second delay between processing each email.
+    // Groq's free tier has a strict 30 Requests Per Minute (RPM) limit.
+    // 2.5 seconds ensures we stay comfortably under this limit.
+    await new Promise((resolve) => setTimeout(resolve, 2500));
   }
 
   // Update last polled timestamp
