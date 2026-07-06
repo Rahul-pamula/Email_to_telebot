@@ -29,8 +29,8 @@ export const config = {
   // Groq AI API
   groq: {
     apiKey: requireEnv("GROQ_API_KEY"),
-    // Llama 3 8B: Fast and efficient for classification + summarization
-    model: "llama3-8b-8192",
+    // Llama 3.1 8B: Fast and efficient for classification + summarization
+    model: "llama-3.1-8b-instant",
     // Max tokens to send to Groq — prevents hitting context limits
     maxEmailTokens: 3000,
   },
