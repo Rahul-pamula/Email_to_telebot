@@ -20,8 +20,8 @@ var config = {
   // Groq AI API
   groq: {
     apiKey: requireEnv("GROQ_API_KEY"),
-    // Llama 3 8B: Fast and efficient for classification + summarization
-    model: "llama3-8b-8192",
+    // Llama 3.1 8B: Fast and efficient for classification + summarization
+    model: "llama-3.1-8b-instant",
     // Max tokens to send to Groq — prevents hitting context limits
     maxEmailTokens: 3e3
   },
@@ -555,7 +555,7 @@ async function fetchUnseenEmails(emailAddress, appPassword, imapHost = "imap.gma
         const messageId = message.envelope?.messageId || `uid-${message.uid}`;
         const rawBody = message.bodyParts?.get("TEXT") || "";
         const textBody = cleanEmailBody(rawBody.toString());
-        const charLimit = config.groq.maxEmailTokens * 4;
+        const charLimit = config.groq.maxEmailTokens * 2;
         const truncatedBody = textBody.length > charLimit ? textBody.substring(0, charLimit) + "\n\n[... email truncated ...]" : textBody;
         emails.push({
           messageId,
@@ -632,7 +632,15 @@ ${body}`;
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[AI] Groq API error ${response.status}:`, errorText);
-      return { isImportant: true, summary: "\u26A0\uFE0F AI Analysis failed (API Error)." };
+      let errMsg = `API Error ${response.status}`;
+      try {
+        const errJson = JSON.parse(errorText);
+        if (errJson.error?.message) {
+          errMsg = errJson.error.message;
+        }
+      } catch (e) {
+      }
+      return { isImportant: true, summary: `\u26A0\uFE0F AI Analysis failed: ${errMsg}` };
     }
     const data = await response.json();
     const content = data?.choices?.[0]?.message?.content;
@@ -678,16 +686,16 @@ async function runEmailPoller(supabase) {
     return;
   }
   console.log(`[Poller] Processing ${accounts.length} active account(s).`);
-  await Promise.all(
-    accounts.map(
-      (account) => processAccount(account, supabase).catch((err) => {
-        console.error(
-          `[Poller] Error processing account ${account.email_address}:`,
-          err
-        );
-      })
-    )
-  );
+  for (const account of accounts) {
+    try {
+      await processAccount(account, supabase);
+    } catch (err) {
+      console.error(
+        `[Poller] Error processing account ${account.email_address}:`,
+        err
+      );
+    }
+  }
   console.log("[Poller] Polling cycle complete.");
 }
 async function processAccount(account, supabase) {
@@ -738,6 +746,7 @@ async function processAccount(account, supabase) {
       blockedSenders,
       vipSenders
     );
+    await new Promise((resolve) => setTimeout(resolve, 2500));
   }
   await supabase.from("email_accounts").update({ last_polled_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", account.id);
 }
@@ -836,20 +845,19 @@ Deno.serve(async (req) => {
   }
   const cronTrigger = req.headers.get("x-cron-trigger");
   if (cronTrigger === "email-poller") {
-    try {
-      console.log("[Router] Cron triggered \u2014 starting email polling.");
-      await runEmailPoller(supabase);
-      return new Response(JSON.stringify({ status: "ok" }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" }
-      });
-    } catch (err) {
-      console.error("[Router] Error during email polling:", err);
-      return new Response(JSON.stringify({ status: "error", message: String(err) }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" }
-      });
+    console.log("[Router] Cron triggered \u2014 starting email polling.");
+    const pollingTask = runEmailPoller(supabase).catch((err) => {
+      console.error("[Router] Error during background email polling:", err);
+    });
+    if (typeof EdgeRuntime !== "undefined" && typeof EdgeRuntime.waitUntil === "function") {
+      EdgeRuntime.waitUntil(pollingTask);
+    } else {
+      console.warn("[Router] EdgeRuntime.waitUntil not found, running task un-awaited.");
     }
+    return new Response(JSON.stringify({ status: "started" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
   }
   console.warn("[Router] Request received with no matching route headers.");
   return new Response("Bad Request", { status: 400 });

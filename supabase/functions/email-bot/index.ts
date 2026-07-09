@@ -70,20 +70,26 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // ─────────────────────────────────────────────────────────────────────────
   const cronTrigger = req.headers.get("x-cron-trigger");
   if (cronTrigger === "email-poller") {
-    try {
-      console.log("[Router] Cron triggered — starting email polling.");
-      await runEmailPoller(supabase);
-      return new Response(JSON.stringify({ status: "ok" }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    } catch (err) {
-      console.error("[Router] Error during email polling:", err);
-      return new Response(JSON.stringify({ status: "error", message: String(err) }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+    console.log("[Router] Cron triggered — starting email polling.");
+    
+    // Run the long-polling process in the background.
+    // This prevents pg_net (which has a short timeout) from aborting the execution.
+    const pollingTask = runEmailPoller(supabase).catch(err => {
+      console.error("[Router] Error during background email polling:", err);
+    });
+
+    // @ts-ignore: EdgeRuntime is provided globally by Supabase Edge Runtime
+    if (typeof EdgeRuntime !== "undefined" && typeof EdgeRuntime.waitUntil === "function") {
+      EdgeRuntime.waitUntil(pollingTask);
+    } else {
+      // Fallback if not running in standard Supabase Edge environment
+      console.warn("[Router] EdgeRuntime.waitUntil not found, running task un-awaited.");
     }
+
+    return new Response(JSON.stringify({ status: "started" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────

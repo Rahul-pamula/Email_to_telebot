@@ -149,7 +149,8 @@ export function DeployWizard() {
           $$
             SELECT net.http_post(
                 url:='${webhookUrl}',
-                headers:='{"x-cron-trigger": "email-poller"}'::jsonb
+                headers:='{"x-cron-trigger": "email-poller"}'::jsonb,
+                timeout_milliseconds:=10000
             );
           $$
         );
