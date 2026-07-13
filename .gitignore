@@ -23,3 +23,8 @@ supabase/.temp/
 *.njsproj
 *.sln
 *.sw?
+
+# PPT Generation files
+venv/
+create_ppt.py
+*.pptx
