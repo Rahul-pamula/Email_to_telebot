@@ -24,6 +24,7 @@ async function callTelegramApi(
   if (!res.ok) {
     const err = await res.text();
     console.error(`[Telegram] API error on ${method}:`, err);
+    throw new Error(`Telegram API error ${res.status} on /${method}: ${err}`);
   }
 }
 
