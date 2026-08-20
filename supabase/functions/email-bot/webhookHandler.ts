@@ -370,9 +370,25 @@ async function handleDigest(
 ): Promise<void> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
+  // First, resolve the current user's email account IDs.
+  // This is required to correctly scope the processed_emails query — without it,
+  // the query would either return no results or leak another user's data.
+  const { data: userAccounts } = await supabase
+    .from("email_accounts")
+    .select("id")
+    .eq("user_telegram_id", telegramId);
+
+  const accountIds = (userAccounts || []).map((a: { id: string }) => a.id);
+
+  if (accountIds.length === 0) {
+    await sendMessage(chatId, "📭 You have no connected email accounts. Use /add_email to add one.");
+    return;
+  }
+
   const { data: summaries } = await supabase
     .from("processed_emails")
     .select("subject, sender, summary, processed_at")
+    .in("email_account_id", accountIds)
     .gte("processed_at", since)
     .not("summary", "is", null)
     .order("processed_at", { ascending: false });

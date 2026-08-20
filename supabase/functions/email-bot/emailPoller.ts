@@ -232,28 +232,40 @@ async function processEmail(
 
   // Gate 5: If snoozed, queue the summary for later delivery
   if (isSnoozed) {
-    await supabase.from("snooze_queue").insert({
-      user_telegram_id: account.user_telegram_id,
-      summary_text: `*${email.subject}*\n_From: ${email.from}_\n${summary ?? ""}`,
-      scheduled_for: prefs.snooze_until,
-    });
-    console.log(`[Poller] User is snoozed — summary queued for later.`);
-    await logProcessed(supabase, email, account.id, summary);
+    try {
+      await supabase.from("snooze_queue").insert({
+        user_telegram_id: account.user_telegram_id,
+        summary_text: `*${email.subject}*\n_From: ${email.from}_\n${summary ?? ""}`,
+        scheduled_for: prefs.snooze_until,
+      });
+      console.log(`[Poller] User is snoozed — summary queued for later.`);
+      await logProcessed(supabase, email, account.id, summary);
+    } catch (snoozeErr) {
+      console.error(`[Poller] Failed to queue snoozed summary for "${email.subject}":`, snoozeErr);
+      // Don't mark as processed — will be retried on next cycle
+    }
     return;
   }
 
-  // Deliver via Telegram
-  await sendSummary(
-    account.user_telegram_id,
-    email.from,
-    email.subject,
-    account.email_address,
-    summary ?? `⚠️ AI Summary unavailable.`,
-    email.messageId
-  );
-
-  console.log(`[Poller] ✅ Summary sent for: ${email.subject}`);
-  await logProcessed(supabase, email, account.id, summary);
+  // Deliver via Telegram — only mark as processed if delivery succeeds
+  try {
+    await sendSummary(
+      account.user_telegram_id,
+      email.from,
+      email.subject,
+      account.email_address,
+      summary ?? `⚠️ AI Summary unavailable.`,
+      email.messageId
+    );
+    console.log(`[Poller] ✅ Summary sent for: ${email.subject}`);
+    await logProcessed(supabase, email, account.id, summary);
+  } catch (telegramErr) {
+    console.error(
+      `[Poller] ❌ Telegram delivery failed for "${email.subject}" — will retry next cycle:`,
+      telegramErr
+    );
+    // Intentionally NOT calling logProcessed here so the email is retried
+  }
 }
 
 

@@ -90,9 +90,18 @@ export async function analyzeEmail(
       return { isImportant: true, summary: "⚠️ AI returned empty content." };
     }
 
-    // Strip markdown JSON wrappers if the LLM hallucinates them despite response_format
-    const cleanContent = content.replace(/^```json\n?/m, "").replace(/\n?```$/m, "").trim();
-    const parsed = JSON.parse(cleanContent);
+    // Strip markdown JSON wrappers if the LLM hallucinates them despite response_format.
+    // Handles both ```json\n and ```json (no newline) variants.
+    const cleanContent = content.replace(/^```(?:json)?\s*/m, "").replace(/\s*```$/m, "").trim();
+
+    let parsed: { classification?: string; summary?: string[] | string } = {};
+    try {
+      parsed = JSON.parse(cleanContent);
+    } catch {
+      console.warn("[AI] Could not parse Groq JSON response, treating as IMPORTANT.");
+      return { isImportant: true, summary: "⚠️ AI returned an unparseable response." };
+    }
+
     const isImportant = parsed?.classification === "IMPORTANT";
     
     let bulletPoints = parsed?.summary;
